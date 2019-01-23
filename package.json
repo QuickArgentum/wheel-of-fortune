@@ -1,0 +1,15 @@
+{
+  "name": "owheel-server",
+  "version": "1.0.0",
+  "description": "Application serving as a wheel of fortune server",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "author": "QuickArgentum",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.4",
+    "sqlite3": "^4.0.6"
+  }
+}
