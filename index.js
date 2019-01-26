@@ -62,7 +62,9 @@ app.get('/score', (req, res) => {
     db.get(`SELECT user, score FROM users WHERE user = ?`, [user], (err, row) => {
         if(err) { return console.log(err.message); }
         if(row) {
-            res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
+            if(req.header("Origin") != undefined)
+                res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
+            console.log(`User ${user} requested their score: ${row.score}`);
             res.send(row);
         }
         else
@@ -72,7 +74,9 @@ app.get('/score', (req, res) => {
         db.run(`INSERT INTO users(user, score) VALUES(?,?)`, [user, 0], (err) => {
             if(err) { return console.log(err.message); }
         })
-        res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
+        if(req.header("Origin") != undefined)
+            res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
+            console.log(`User ${user} is a new user; adding them to the DB`);
         res.send({score: 0});
     }
 })
@@ -80,7 +84,9 @@ app.get('/score', (req, res) => {
 // HTTP GET: segments; generate segments of the wheel
 app.get('/segments', (req, res) => {
     generateSegments()
-    res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
+    if(req.header("Origin") != undefined)
+        res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
+    console.log(`Generated new segments: ${segments}`);
     res.send(segments);
 })
 
@@ -91,17 +97,20 @@ app.get('/spin', (req, res) => {
         return;
     }
     let segIndex = randInt(0,11);
-    let score = segments[segIndex]
-    let user = req.query.user
+    let segScore = segments[segIndex];
+    let user = req.query.user;
+
     db.get(`SELECT user, score FROM users WHERE user = ?`, [user], (err, row) => {
         if(err) { return console.log(err.message); }
-        score += row.score
+        let score = row.score + segScore;
+        db.run(`UPDATE users SET score = ? WHERE user = ?`, [score, user], (err) => {
+            if(err) { return console.log(err.message); }
+        })
+        if(req.header("Origin") != undefined)
+            res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
+        console.log(`User ${user} got segment #${segIndex} for ${segScore}`);
+        res.send({index: segIndex});
     })
-    db.run(`UPDATE users SET score = ? WHERE user = ?`, [score, user], (err) => {
-        if(err) { return console.log(err.message); }
-    })
-    res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
-    res.send({index: segIndex});
 })
 
 app.listen(PORT, () => console.log(`Wheel of fortune server listening on port ${PORT}`))
