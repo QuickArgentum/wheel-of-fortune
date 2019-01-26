@@ -61,8 +61,10 @@ app.get('/score', (req, res) => {
     let isUserNew = false
     db.get(`SELECT user, score FROM users WHERE user = ?`, [user], (err, row) => {
         if(err) { return console.log(err.message); }
-        if(row)
+        if(row) {
+            res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
             res.send(row);
+        }
         else
             isUserNew = true;
     })
@@ -70,6 +72,7 @@ app.get('/score', (req, res) => {
         db.run(`INSERT INTO users(user, score) VALUES(?,?)`, [user, 0], (err) => {
             if(err) { return console.log(err.message); }
         })
+        res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
         res.send({score: 0});
     }
 })
@@ -77,6 +80,7 @@ app.get('/score', (req, res) => {
 // HTTP GET: segments; generate segments of the wheel
 app.get('/segments', (req, res) => {
     generateSegments()
+    res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
     res.send(segments);
 })
 
@@ -96,6 +100,7 @@ app.get('/spin', (req, res) => {
     db.run(`UPDATE users SET score = ? WHERE user = ?`, [score, user], (err) => {
         if(err) { return console.log(err.message); }
     })
+    res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
     res.send({index: segIndex});
 })
 
