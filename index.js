@@ -58,27 +58,22 @@ else {
 // HTTP GET: user score; if user is not present in DB create a row for them with zero score
 app.get('/score', (req, res) => {
     let user = req.query.user;
-    let isUserNew = false
+    if(req.header("Origin") != undefined)
+        res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
     db.get(`SELECT user, score FROM users WHERE user = ?`, [user], (err, row) => {
         if(err) { return console.log(err.message); }
-        if(row) {
-            if(req.header("Origin") != undefined)
-                res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
+        if(row != undefined) {
             console.log(`User ${user} requested their score: ${row.score}`);
             res.send(row);
         }
-        else
-            isUserNew = true;
-    })
-    if(isUserNew) {
-        db.run(`INSERT INTO users(user, score) VALUES(?,?)`, [user, 0], (err) => {
-            if(err) { return console.log(err.message); }
-        })
-        if(req.header("Origin") != undefined)
-            res.setHeader("Access-Control-Allow-Origin", req.header("Origin"));
+        else {
+            db.run(`INSERT INTO users(user, score) VALUES(?,?)`, [user, 0], (err) => {
+                if(err) { return console.log(err.message); }
+            })
             console.log(`User ${user} is a new user; adding them to the DB`);
-        res.send({score: 0});
-    }
+            res.send( {user: user, score: 0} );
+        }
+    })
 })
 
 // HTTP GET: segments; generate segments of the wheel
@@ -102,6 +97,7 @@ app.get('/spin', (req, res) => {
 
     db.get(`SELECT user, score FROM users WHERE user = ?`, [user], (err, row) => {
         if(err) { return console.log(err.message); }
+        if(row == undefined) { return console.log(`User ${user} not registered in the DB, cannot spin.`); }
         let score = row.score + segScore;
         db.run(`UPDATE users SET score = ? WHERE user = ?`, [score, user], (err) => {
             if(err) { return console.log(err.message); }
